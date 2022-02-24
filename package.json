@@ -4,8 +4,8 @@
     "parcel": "^2.3.2"
   },
   "scripts": {
-    "start": "parcel",
-    "build": "parcel build"
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html"
   },
   "dependencies": {
     "vue": "^3.2.31"
