@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@parcel/transformer-vue": "2.3.2",
+    "parcel": "^2.3.2"
+  },
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build"
+  },
+  "dependencies": {
+    "vue": "^3.2.31"
+  }
+}
