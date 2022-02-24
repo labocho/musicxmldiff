@@ -7,10 +7,6 @@
       <ul>
         <li v-for="part in scoreA.partList" :key="part">{{part}}</li>
       </ul>
-      <ul>
-        <li v-for="digest, index in scoreA.digests" :key="index">{{digest}}</li>
-      </ul>
-
     </div>
     <div v-if="scoreB">
       <code>{{scoreB.numberOfMeasures}}</code>
@@ -18,21 +14,54 @@
         <li v-for="part in scoreB.partList" :key="part">{{part}}</li>
       </ul>
     </div>
-
+    <div v-if="diff">
+      <ul>
+        <li v-for="d, index in diff.digestDiffs" :key="index">A[{{d.aFrom}}...{{d.aBefore}}] is different from B[{{d.bFrom}}...{{d.bBefore}}]</li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
+import {diff} from "fast-myers-diff";
+
+interface DigestDiff {
+  aFrom: number
+  aBefore: number
+  bFrom: number
+  bBefore: number
+}
+
+class ScoreDiff {
+  public a: Score;
+  public b: Score;
+  public digestDiffs: DigestDiff[]
+
+  constructor(a: Score, b: Score) {
+    // this.digestDiffs = Array.prototype.map.call(diff(a.digests, b.digests), (e)=> e);
+    this.digestDiffs = Array.from(diff(a.digests, b.digests)).map((vec4) => {
+      return {
+        aFrom: vec4[0],
+        aBefore: vec4[1],
+        bFrom: vec4[2],
+        bBefore: vec4[3],
+      }
+    });
+  }
+}
+
 
 class Score {
   private document: Document;
   public numberOfMeasures: number;
   public partList: string[];
   public digests: string[];
+  public loaded: boolean;
   private _measures: NodeListOf<Element>;
   private update: (score: Score) => void;
 
   constructor(xmlString: string, update: (score: Score)=> void) {
+    this.loaded = false;
     this.update = update;
     this.document = new DOMParser().parseFromString(xmlString, "text/xml");
     this.numberOfMeasures = this.document.querySelectorAll("measure").length;
@@ -45,6 +74,7 @@ class Score {
     this.digests = [];
     this.calculateDigest().then((digests) => {
       this.digests = digests;
+      this.loaded = true;
       this.update(this);
     })
   }
@@ -79,6 +109,7 @@ export default {
       fileContentB: null,
       scoreA: null,
       scoreB: null,
+      diff: null,
     };
   },
   methods: {
@@ -96,6 +127,11 @@ export default {
     },
     updateScore(score: Score, identifier: string) {
       this[`score${identifier}`] = Object.assign({}, score);
+      if (this.scoreA && this.scoreA.loaded && this.scoreB && this.scoreB.loaded) {
+        this.diff = new ScoreDiff(this.scoreA, this.scoreB);
+      } else {
+        this.diff = null;
+      }
     },
   },
 };
