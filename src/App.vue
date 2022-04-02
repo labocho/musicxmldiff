@@ -17,10 +17,7 @@
     </div>
     <div v-if="diff">
       <ul>
-        <li v-for="d, index in diff.digestDiffs" :key="index">
-          <h4>A[{{d.aMeasureNumbers.from}}..{{d.aMeasureNumbers.to}}] is different from B[{{d.bMeasureNumbers.from}}..{{d.bMeasureNumbers.to}}]</h4>
-          <div v-html="udiffToHTML(udiff(d.aFilteredMeasures, d.bFilteredMeasures))"></div>
-        </li>
+        <Diff v-for="d, index in diff.digestDiffs" :diff="d" :key="index" />
       </ul>
     </div>
   </div>
@@ -28,8 +25,7 @@
 
 <script lang="ts">
 import {diff} from "fast-myers-diff";
-import * as diff2html from "diff2html";
-import {createTwoFilesPatch} from "diff";
+import Diff from "./Diff.vue";
 
 interface DigestDiff {
   aFrom: number
@@ -41,6 +37,16 @@ interface DigestDiff {
 interface Ignores {
   elements: string[]
   attributes: {selector: string, attributes: string[] }[]
+}
+
+
+function getMeasureNumbers(measures): {from: string|null, to: string|null} {
+  if (measures.length === 0) return {from: null, to: null};
+
+  return {
+    from: measures[0].raw.getAttribute("number"),
+    to: measures[measures.length - 1].raw.getAttribute("number"),
+  }
 }
 
 class ScoreDiff {
@@ -58,25 +64,43 @@ class ScoreDiff {
         bBefore: vec4[3],
         aMeasures: a.measures.slice(vec4[0], vec4[1]),
         bMeasures: b.measures.slice(vec4[2], vec4[3]),
-        aFilteredMeasures: a.filteredMeasures.slice(vec4[0], vec4[1]),
-        bFilteredMeasures: b.filteredMeasures.slice(vec4[2], vec4[3]),
         aMeasureNumbers: null,
         bMeasureNumbers: null,
-      }
-      digestDiff.aMeasureNumbers = {
-        from: digestDiff.aMeasures[0].getAttribute("number"),
-        to: digestDiff.aMeasures[0].getAttribute("number"),
       };
-      digestDiff.bMeasureNumbers = {
-        from: digestDiff.bMeasures[0].getAttribute("number"),
-        to: digestDiff.bMeasures[0].getAttribute("number"),
-      };
+
+      digestDiff.aMeasureNumbers = getMeasureNumbers(digestDiff.aMeasures);
+      digestDiff.bMeasureNumbers = getMeasureNumbers(digestDiff.bMeasures);
 
       return digestDiff;
     });
   }
 }
 
+class Measure {
+  public raw: Element;
+  public filtered: Element;
+
+  constructor(raw: Element, filtered: Element) {
+    this.raw = raw;
+    this.filtered = filtered;
+  }
+
+  get musicXML(): string {
+    return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+      <score-partwise version="3.1">
+        <part-list>
+          <score-part id="P1">
+            <part-name>Temp</part-name>
+          </score-part>
+        </part-list>
+        <part id="P1">
+          ${this.filtered.outerHTML}
+        </part>
+      </score-partwise>
+    `;
+  }
+}
 
 class Score {
   private document: Document;
@@ -84,8 +108,7 @@ class Score {
   public partList: string[];
   public digests: string[];
   public loaded: boolean;
-  public measures: Element[];
-  public filteredMeasures: Element[];
+  public measures: Measure[];
   private update: (score: Score) => void;
   private ignores: Ignores;
 
@@ -100,8 +123,9 @@ class Score {
       this.document.querySelectorAll("part-list > score-part > part-name"),
       (el: Element) => el.textContent,
     );
-    this.measures = Array.from(this.document.querySelectorAll("part#P1 > measure"));
-    this.filteredMeasures = this.measures.map((e) => this.filterElement(e));
+    this.measures = Array.from(
+      this.document.querySelectorAll("part#P1 > measure")
+    ).map((m) => new Measure(m, this.filterElement(m)));
 
     this.digests = [];
     this.calculateDigest().then((digests) => {
@@ -124,7 +148,6 @@ class Score {
     for (let selectorAndAttributes of this.ignores.attributes) {
       filtered.querySelectorAll(selectorAndAttributes.selector).forEach((e) => {
         for (let attribute of selectorAndAttributes.attributes) {
-          console.log(`remove ${selectorAndAttributes.selector}[${attribute}]`)
           e.removeAttribute(attribute);
         }
       });
@@ -145,9 +168,9 @@ class Score {
     const subtle = window.crypto.subtle;
     return await Promise.all(
       Array.prototype.map.call(
-        this.filteredMeasures,
-        async (m: Element) => {
-          const ab = await subtle.digest("SHA-256", this.stringToBuffer(m.outerHTML));
+        this.measures,
+        async (m: Measure) => {
+          const ab = await subtle.digest("SHA-256", this.stringToBuffer(m.filtered.outerHTML));
           return this.bufferToString(ab);
         }
       ),
@@ -156,6 +179,7 @@ class Score {
 }
 
 export default {
+  components: {Diff},
   data() {
     return {
       name: "Vue" as String,
@@ -191,28 +215,6 @@ export default {
         this[`fileContent${identifier}`] = xmlString;
         this[`score${identifier}`] = score;
       };
-    },
-    udiff(aMeasures, bMeasures) {
-        let a = [];
-        let b = [];
-
-        for (let m of aMeasures) {
-          a.push(m.outerHTML)
-        }
-
-        for (let m of bMeasures) {
-          b.push(m.outerHTML)
-        }
-
-        return createTwoFilesPatch(
-          "left",
-          "right",
-          a.join(""),
-          b.join(""),
-        );
-    },
-    udiffToHTML(udiff) {
-      return diff2html.html(udiff, {outputFormat: "side-by-side"});
     },
     updateScore(score: Score, identifier: string) {
       this[`score${identifier}`] = Object.assign({}, score);
