@@ -18,8 +18,8 @@
     <div v-if="diff">
       <ul>
         <li v-for="d, index in diff.digestDiffs" :key="index">
-          <h4>A[{{d.aFrom}}...{{d.aBefore}}] is different from B[{{d.bFrom}}...{{d.bBefore}}]</h4>
-          <div v-html="udiffToHTML(udiff(d.aMeasures, d.bMeasures))"></div>
+          <h4>A[{{d.aMeasureNumbers.from}}..{{d.aMeasureNumbers.to}}] is different from B[{{d.bMeasureNumbers.from}}..{{d.bMeasureNumbers.to}}]</h4>
+          <div v-html="udiffToHTML(udiff(d.aFilteredMeasures, d.bFilteredMeasures))"></div>
         </li>
       </ul>
     </div>
@@ -56,9 +56,22 @@ class ScoreDiff {
         aBefore: vec4[1],
         bFrom: vec4[2],
         bBefore: vec4[3],
-        aMeasures: a.filteredMeasures.slice(vec4[0], vec4[1]),
-        bMeasures: b.filteredMeasures.slice(vec4[2], vec4[3]),
+        aMeasures: a.measures.slice(vec4[0], vec4[1]),
+        bMeasures: b.measures.slice(vec4[2], vec4[3]),
+        aFilteredMeasures: a.filteredMeasures.slice(vec4[0], vec4[1]),
+        bFilteredMeasures: b.filteredMeasures.slice(vec4[2], vec4[3]),
+        aMeasureNumbers: null,
+        bMeasureNumbers: null,
       }
+      digestDiff.aMeasureNumbers = {
+        from: digestDiff.aMeasures[0].getAttribute("number"),
+        to: digestDiff.aMeasures[0].getAttribute("number"),
+      };
+      digestDiff.bMeasureNumbers = {
+        from: digestDiff.bMeasures[0].getAttribute("number"),
+        to: digestDiff.bMeasures[0].getAttribute("number"),
+      };
+
       return digestDiff;
     });
   }
