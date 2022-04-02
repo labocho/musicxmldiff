@@ -8,7 +8,9 @@
     "build": "parcel build src/index.html"
   },
   "dependencies": {
+    "diff2html": "^3.4.16",
     "fast-myers-diff": "^3.0.1",
+    "jsdiff": "^1.1.1",
     "vue": "^3.2.31"
   }
 }

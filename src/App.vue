@@ -1,4 +1,5 @@
 <template>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
   <div>
     <input type="file" @change="changeFile($event, 'A')" />
     <input type="file" @change="changeFile($event, 'B')" />
@@ -16,7 +17,10 @@
     </div>
     <div v-if="diff">
       <ul>
-        <li v-for="d, index in diff.digestDiffs" :key="index">A[{{d.aFrom}}...{{d.aBefore}}] is different from B[{{d.bFrom}}...{{d.bBefore}}]</li>
+        <li v-for="d, index in diff.digestDiffs" :key="index">
+          <h4>A[{{d.aFrom}}...{{d.aBefore}}] is different from B[{{d.bFrom}}...{{d.bBefore}}]</h4>
+          <div v-html="udiffToHTML(udiff(d.aMeasures, d.bMeasures))"></div>
+        </li>
       </ul>
     </div>
   </div>
@@ -24,6 +28,8 @@
 
 <script lang="ts">
 import {diff} from "fast-myers-diff";
+import * as diff2html from "diff2html";
+import {createTwoFilesPatch} from "diff";
 
 interface DigestDiff {
   aFrom: number
@@ -40,12 +46,15 @@ class ScoreDiff {
   constructor(a: Score, b: Score) {
     // this.digestDiffs = Array.prototype.map.call(diff(a.digests, b.digests), (e)=> e);
     this.digestDiffs = Array.from(diff(a.digests, b.digests)).map((vec4) => {
-      return {
+      let digestDiff = {
         aFrom: vec4[0],
         aBefore: vec4[1],
         bFrom: vec4[2],
         bBefore: vec4[3],
+        aMeasures: a.measures.slice(vec4[0], vec4[1]),
+        bMeasures: b.measures.slice(vec4[2], vec4[3]),
       }
+      return digestDiff;
     });
   }
 }
@@ -57,7 +66,7 @@ class Score {
   public partList: string[];
   public digests: string[];
   public loaded: boolean;
-  private _measures: NodeListOf<Element>;
+  public measures: Element[];
   private update: (score: Score) => void;
 
   constructor(xmlString: string, update: (score: Score)=> void) {
@@ -69,7 +78,7 @@ class Score {
       this.document.querySelectorAll("part-list > score-part > part-name"),
       (el: Element) => el.textContent,
     );
-    this._measures = this.document.querySelectorAll("part#P1 > measure");
+    this.measures = Array.from(this.document.querySelectorAll("part#P1 > measure"));
 
     this.digests = [];
     this.calculateDigest().then((digests) => {
@@ -91,7 +100,7 @@ class Score {
     const subtle = window.crypto.subtle;
     return await Promise.all(
       Array.prototype.map.call(
-        this._measures,
+        this.measures,
         async (m: Element) => {
           const ab = await subtle.digest("SHA-256", this.stringToBuffer(m.outerHTML));
           return this.bufferToString(ab);
@@ -112,6 +121,8 @@ export default {
       diff: null,
     };
   },
+  filters: {
+  },
   methods: {
     changeFile(e, identifier) {
       const reader = new FileReader();
@@ -124,6 +135,28 @@ export default {
         this[`fileContent${identifier}`] = xmlString;
         this[`score${identifier}`] = score;
       };
+    },
+    udiff(aMeasures, bMeasures) {
+        let a = [];
+        let b = [];
+
+        for (let m of aMeasures) {
+          a.push(m.outerHTML)
+        }
+
+        for (let m of bMeasures) {
+          b.push(m.outerHTML)
+        }
+
+        return createTwoFilesPatch(
+          "left",
+          "right",
+          a.join(""),
+          b.join(""),
+        );
+    },
+    udiffToHTML(udiff) {
+      return diff2html.html(udiff, {outputFormat: "side-by-side"});
     },
     updateScore(score: Score, identifier: string) {
       this[`score${identifier}`] = Object.assign({}, score);
