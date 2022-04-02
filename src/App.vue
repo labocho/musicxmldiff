@@ -38,6 +38,11 @@ interface DigestDiff {
   bBefore: number
 }
 
+interface Ignores {
+  elements: string[]
+  attributes: {selector: string, attributes: string[] }[]
+}
+
 class ScoreDiff {
   public a: Score;
   public b: Score;
@@ -51,8 +56,8 @@ class ScoreDiff {
         aBefore: vec4[1],
         bFrom: vec4[2],
         bBefore: vec4[3],
-        aMeasures: a.measures.slice(vec4[0], vec4[1]),
-        bMeasures: b.measures.slice(vec4[2], vec4[3]),
+        aMeasures: a.filteredMeasures.slice(vec4[0], vec4[1]),
+        bMeasures: b.filteredMeasures.slice(vec4[2], vec4[3]),
       }
       return digestDiff;
     });
@@ -67,18 +72,23 @@ class Score {
   public digests: string[];
   public loaded: boolean;
   public measures: Element[];
+  public filteredMeasures: Element[];
   private update: (score: Score) => void;
+  private ignores: Ignores;
 
-  constructor(xmlString: string, update: (score: Score)=> void) {
+  constructor(xmlString: string, ignores: Ignores, update: (score: Score)=> void) {
     this.loaded = false;
     this.update = update;
     this.document = new DOMParser().parseFromString(xmlString, "text/xml");
+    this.ignores = ignores;
+
     this.numberOfMeasures = this.document.querySelectorAll("measure").length;
     this.partList = Array.prototype.map.call(
       this.document.querySelectorAll("part-list > score-part > part-name"),
       (el: Element) => el.textContent,
     );
     this.measures = Array.from(this.document.querySelectorAll("part#P1 > measure"));
+    this.filteredMeasures = this.measures.map((e) => this.filterElement(e));
 
     this.digests = [];
     this.calculateDigest().then((digests) => {
@@ -86,6 +96,28 @@ class Score {
       this.loaded = true;
       this.update(this);
     })
+  }
+
+  private filterElement(el: Element): Element {
+    // measure 自体にマッチするセレクタがヒットするように dummy 要素で囲む
+    let filtered = new DOMParser().parseFromString("<dummy>" + el.outerHTML + "</dummy>", "text/xml").firstElementChild;
+
+    for (let selector of this.ignores.elements) {
+      filtered.querySelectorAll(selector).forEach((e) => {
+        e.remove();
+      });
+    }
+
+    for (let selectorAndAttributes of this.ignores.attributes) {
+      filtered.querySelectorAll(selectorAndAttributes.selector).forEach((e) => {
+        for (let attribute of selectorAndAttributes.attributes) {
+          console.log(`remove ${selectorAndAttributes.selector}[${attribute}]`)
+          e.removeAttribute(attribute);
+        }
+      });
+    }
+
+    return filtered.firstElementChild;
   }
 
   private stringToBuffer(s: string) {
@@ -100,7 +132,7 @@ class Score {
     const subtle = window.crypto.subtle;
     return await Promise.all(
       Array.prototype.map.call(
-        this.measures,
+        this.filteredMeasures,
         async (m: Element) => {
           const ab = await subtle.digest("SHA-256", this.stringToBuffer(m.outerHTML));
           return this.bufferToString(ab);
@@ -119,6 +151,17 @@ export default {
       scoreA: null,
       scoreB: null,
       diff: null,
+      ignores: {
+        elements: [
+          "sound",
+        ],
+        attributes: [
+          {
+            selector: "measure",
+            attributes: ["number"],
+          },
+        ],
+      } as Ignores
     };
   },
   filters: {
@@ -130,7 +173,7 @@ export default {
       reader.onload = (e2) => {
         const xmlString = e2.target.result as string;
         let score = null;
-        if (xmlString !== null) score = new Score(xmlString, (score: Score) => this.updateScore(score, identifier));
+        if (xmlString !== null) score = new Score(xmlString, this.ignores, (score: Score) => this.updateScore(score, identifier));
 
         this[`fileContent${identifier}`] = xmlString;
         this[`score${identifier}`] = score;
