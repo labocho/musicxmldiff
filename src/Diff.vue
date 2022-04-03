@@ -57,7 +57,7 @@ export default {
             </score-part>
           </part-list>
           <part id="P1">
-            ${measures[0].raw.outerHTML.replace(/(<measure.+?>)/, "$1" + measures[0].contextMusicXML()) + "\n"}
+            ${measures[0].raw.outerHTML.replace(/(<attributes.*?>)/, "$1" + measures[0].contextMusicXML()) + "\n"}
             ${measures.slice(1).map((m) => m.raw.outerHTML).join("\n")}
           </part>
         </score-partwise>

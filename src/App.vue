@@ -6,18 +6,26 @@
     <div v-if="scoreA">
       <code>{{scoreA.numberOfMeasures}}</code>
       <ul>
-        <li v-for="part in scoreA.partList" :key="part">{{part}}</li>
+        <li v-for="part in scoreA.partNames" :key="part">{{part}}</li>
       </ul>
     </div>
     <div v-if="scoreB">
       <code>{{scoreB.numberOfMeasures}}</code>
       <ul>
-        <li v-for="part in scoreB.partList" :key="part">{{part}}</li>
+        <li v-for="part in scoreB.partNames" :key="part">{{part}}</li>
       </ul>
     </div>
-    <div v-if="diff">
+
+    <div v-if="scoreDiff">
+      <select v-model="currentPartName">
+        <option />
+        <option v-for="partDiff in scoreDiff.partDiffs" :key="partDiff.name" :value="partDiff.name">{{partDiff.name}}</option>
+      </select>
+    </div>
+
+    <div v-if="partDiff">
       <section>
-        <Diff v-for="d, index in diff.digestDiffs" :diff="d" :key="index" />
+        <Diff v-for="d, index in partDiff.digestDiffs" :diff="d" :key="index" />
       </section>
     </div>
   </div>
@@ -53,20 +61,43 @@ function last(a) {
 }
 
 class ScoreDiff {
-  public a: Score;
-  public b: Score;
-  public digestDiffs: DigestDiff[]
+  public partDiffs: PartDiff[];
 
   constructor(a: Score, b: Score) {
-    // this.digestDiffs = Array.prototype.map.call(diff(a.digests, b.digests), (e)=> e);
-    this.digestDiffs = Array.from(diff(a.digests, b.digests)).map((vec4) => {
+    let partNames = Array.from(new Set(a.partNames.concat(b.partNames)));
+    this.partDiffs = partNames.map((partName) => {
+      let partA = a.parts.find((part) => part.name === partName);
+      let partB = b.parts.find((part) => part.name === partName);
+      return new PartDiff(partName, partA, partB);
+    });
+  }
+
+  getPartDiffByName(name: string): PartDiff|null {
+    return this.partDiffs.find((partDiff) => partDiff.name === name);
+  }
+}
+
+class PartDiff {
+  public digestDiffs: DigestDiff[]
+  public name: string
+
+  constructor(name: string, a: Part|null, b: Part|null) {
+    this.name = name;
+
+    let aDigests = a === null ? [] : a.digests;
+    let bDigests = b === null ? [] : b.digests;
+
+    let aMeasures = a === null ? [] : a.measures;
+    let bMeasures = b === null ? [] : b.measures;
+
+    this.digestDiffs = Array.from(diff(aDigests, bDigests)).map((vec4) => {
       let digestDiff = {
         aFrom: vec4[0],
         aBefore: vec4[1],
         bFrom: vec4[2],
         bBefore: vec4[3],
-        aMeasures: a.measures.slice(vec4[0], vec4[1]),
-        bMeasures: b.measures.slice(vec4[2], vec4[3]),
+        aMeasures: aMeasures.slice(vec4[0], vec4[1]),
+        bMeasures: bMeasures.slice(vec4[2], vec4[3]),
         aMeasureNumbers: null,
         bMeasureNumbers: null,
       };
@@ -106,27 +137,24 @@ class Measure {
   }
 }
 
-class Score {
-  private document: Document;
+class Part {
+  private element: Element;
+  public id: string;
+  public name: string;
   public numberOfMeasures: number;
-  public partList: string[];
   public digests: string[];
-  public loaded: boolean;
-  public measures: Measure[];
-  private update: (score: Score) => void;
   private ignores: Ignores;
+  public measures: Measure[];
+  public loaded: boolean;
 
-  constructor(xmlString: string, ignores: Ignores, update: (score: Score)=> void) {
+  constructor(element: Element, id: string, name: string, ignores: Ignores) {
+    this.element = element;
+    this.id = id;
+    this.name = name;
     this.loaded = false;
-    this.update = update;
-    this.document = new DOMParser().parseFromString(xmlString, "text/xml");
     this.ignores = ignores;
 
-    this.numberOfMeasures = this.document.querySelectorAll("measure").length;
-    this.partList = Array.prototype.map.call(
-      this.document.querySelectorAll("part-list > score-part > part-name"),
-      (el: Element) => el.textContent,
-    );
+    this.numberOfMeasures = this.element.querySelectorAll("measure").length;
 
     let context = {
       key: null,
@@ -135,7 +163,7 @@ class Score {
     };
 
     this.measures = Array.from(
-      this.document.querySelectorAll("part#P1 > measure")
+      this.element.querySelectorAll("part > measure")
     ).map((m) => {
       let measure = new Measure(m, this.filterElement(m), context);
       context = Object.assign({}, context);
@@ -153,10 +181,12 @@ class Score {
     });
 
     this.digests = [];
-    this.calculateDigest().then((digests) => {
+  }
+
+  load(): Promise<void> {
+    return this.calculateDigest().then((digests) => {
       this.digests = digests;
       this.loaded = true;
-      this.update(this);
     })
   }
 
@@ -181,14 +211,6 @@ class Score {
     return filtered.firstElementChild;
   }
 
-  private stringToBuffer(s: string) {
-    return new Uint16Array(Array.prototype.map.call(s, (c: string) => c.charCodeAt(0))).buffer;
-  }
-
-  private bufferToString(ab: ArrayBuffer) {
-    return String.fromCharCode.apply(null, new Uint16Array(ab));
-  }
-
   private async calculateDigest(): Promise<string[]> {
     const subtle = window.crypto.subtle;
     return await Promise.all(
@@ -201,18 +223,72 @@ class Score {
       ),
     );
   }
+
+  private stringToBuffer(s: string) {
+    return new Uint16Array(Array.prototype.map.call(s, (c: string) => c.charCodeAt(0))).buffer;
+  }
+
+  private bufferToString(ab: ArrayBuffer) {
+    return String.fromCharCode.apply(null, new Uint16Array(ab));
+  }
+}
+
+class Score {
+  private document: Document;
+  public partNames: string[];
+  public parts: Part[];
+  public loaded: boolean;
+
+  constructor(xmlString: string, ignores: Ignores) {
+    this.loaded = false;
+    this.document = new DOMParser().parseFromString(xmlString, "text/xml");
+    this.partNames = Array.prototype.map.call(
+      this.document.querySelectorAll("part-list > score-part > part-name"),
+      (el: Element) => el.textContent,
+    );
+
+    this.parts = Array.from(this.document.querySelectorAll("part")).map((el) => {
+      let id = el.getAttribute("id");
+      let name = this.document.querySelector(`part-list > score-part#${id} > part-name`).textContent;
+      return new Part(el, id, name, ignores)
+    });
+  }
+
+  load(): Promise<void> {
+    return Promise.all(this.parts.map((part) => part.load())).then(() => {
+      this.loaded = true;
+    });
+  }
 }
 
 export default {
   components: {Diff},
+  computed: {
+    partA() {
+      if (this.currentPartName === null) return null;
+      if (this.scoreA === null) return null;
+
+      return this.scoreA.parts.find((part) => part.name === this.currentPartName);
+    },
+    partB() {
+      if (this.currentPartName === null) return null;
+      if (this.scoreB === null) return null;
+
+      return this.scoreB.parts.find((part) => part.name === this.currentPartName);
+    },
+    partDiff() {
+      if (this.scoreDiff === null) return null;
+
+      return this.scoreDiff.getPartDiffByName(this.currentPartName)
+    }
+  },
   data() {
     return {
       name: "Vue" as String,
-      fileContentA: null,
-      fileContentB: null,
       scoreA: null,
       scoreB: null,
-      diff: null,
+      scoreDiff: null,
+      currentPartName: null,
       ignores: {
         elements: [
           "sound",
@@ -236,18 +312,20 @@ export default {
       reader.onload = (e2) => {
         const xmlString = e2.target.result as string;
         let score = null;
-        if (xmlString !== null) score = new Score(xmlString, this.ignores, (score: Score) => this.updateScore(score, identifier));
+        if (xmlString !== null) score = new Score(xmlString, this.ignores);
+        score.load().then(() => { this.updateScore() })
 
-        this[`fileContent${identifier}`] = xmlString;
         this[`score${identifier}`] = score;
       };
     },
     updateScore(score: Score, identifier: string) {
       this[`score${identifier}`] = Object.assign({}, score);
       if (this.scoreA && this.scoreA.loaded && this.scoreB && this.scoreB.loaded) {
-        this.diff = new ScoreDiff(this.scoreA, this.scoreB);
+        this.scoreDiff = new ScoreDiff(this.scoreA, this.scoreB);
+        this.currentPartName = null;
       } else {
-        this.diff = null;
+        this.scoreDiff = null;
+        this.currentPartName = null;
       }
     },
   },
