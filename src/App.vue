@@ -1,6 +1,6 @@
 <template>
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
-  <div>
+  <div class="container">
     <input type="file" @change="changeFile($event, 'A')" />
     <input type="file" @change="changeFile($event, 'B')" />
     <div v-if="scoreA">
@@ -16,9 +16,9 @@
       </ul>
     </div>
     <div v-if="diff">
-      <ul>
+      <section>
         <Diff v-for="d, index in diff.digestDiffs" :diff="d" :key="index" />
-      </ul>
+      </section>
     </div>
   </div>
 </template>

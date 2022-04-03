@@ -1,22 +1,25 @@
 <template>
-  <li>
-    <h4>{{measureNumber}}</h4>
-    <div v-if="showDiff">
-      <button @click="this.showDiff = false">
+  <div class="measure">
+    <div class="mb-4 d-flex" style="align-items: center;">
+      <h4 style="flex-grow: 1; margin: 0;">{{measureNumber}}</h4>
+
+      <button v-if="!showDiff" class="btn btn-outline-dark mt-2 mb-2" @click="this.showDiff = true">
+        Show diff
+      </button>
+      <button v-else class="btn btn-outline-dark mt-2 mb-2" @click="this.showDiff = false">
         Hide diff
       </button>
-      <div v-html="udiffToHTML(udiff(diff.aMeasures, diff.bMeasures))"></div>
     </div>
-    <button v-else @click="this.showDiff = true">
-      Show diff
-    </button>
     <div style="display: flex;">
       <SheetMusic v-if="diff.aMeasures[0]" :musicXML="musicXML(diff.aMeasures)" style="width: 50%" />
       <div v-else style="width: 50%" />
       <SheetMusic v-if="diff.bMeasures[0]" :musicXML="musicXML(diff.bMeasures)" style="width: 50%" />
       <div v-else style="width: 50%" />
     </div>
-  </li>
+    <div v-if="showDiff">
+      <div v-html="udiffToHTML(udiff(diff.aMeasures, diff.bMeasures))"></div>
+    </div>
+  </div>
 </template>
 
 
@@ -90,3 +93,10 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+  .measure {
+    margin: 1em 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+</style>
