@@ -39,7 +39,6 @@ interface Ignores {
   attributes: {selector: string, attributes: string[] }[]
 }
 
-
 function getMeasureNumbers(measures): {from: string|null, to: string|null} {
   if (measures.length === 0) return {from: null, to: null};
 
@@ -47,6 +46,10 @@ function getMeasureNumbers(measures): {from: string|null, to: string|null} {
     from: measures[0].raw.getAttribute("number"),
     to: measures[measures.length - 1].raw.getAttribute("number"),
   }
+}
+
+function last(a) {
+  return a[a.length - 1];
 }
 
 class ScoreDiff {
@@ -76,13 +79,30 @@ class ScoreDiff {
   }
 }
 
+interface Context {
+  key: string
+  time: string
+  clef: string
+}
+
 class Measure {
   public raw: Element;
   public filtered: Element;
+  public context: Context;
 
-  constructor(raw: Element, filtered: Element) {
+  constructor(raw: Element, filtered: Element, context: Context) {
     this.raw = raw;
     this.filtered = filtered;
+    this.context = context;
+  }
+
+  contextMusicXML(): string {
+    let buf = [];
+    if (this.context.key !== null) buf.push(this.context.key);
+    if (this.context.time !== null) buf.push(this.context.time);
+    if (this.context.clef !== null) buf.push(this.context.clef);
+
+    return buf.join("\n");
   }
 }
 
@@ -107,9 +127,30 @@ class Score {
       this.document.querySelectorAll("part-list > score-part > part-name"),
       (el: Element) => el.textContent,
     );
+
+    let context = {
+      key: null,
+      time: null,
+      clef: null,
+    };
+
     this.measures = Array.from(
       this.document.querySelectorAll("part#P1 > measure")
-    ).map((m) => new Measure(m, this.filterElement(m)));
+    ).map((m) => {
+      let measure = new Measure(m, this.filterElement(m), context);
+      context = Object.assign({}, context);
+
+      let key = last(m.querySelectorAll("key"));
+      if (key !== undefined) context.key = key.outerHTML;
+
+      let time = last(m.querySelectorAll("time"));
+      if (time !== undefined) context.time = time.outerHTML;
+
+      let clef = last(m.querySelectorAll("clef"));
+      if (clef !== undefined) context.clef = clef.outerHTML;
+
+      return measure;
+    });
 
     this.digests = [];
     this.calculateDigest().then((digests) => {
