@@ -1,7 +1,15 @@
 <template>
   <li>
-    <h4>A[{{diff.aMeasureNumbers.from}}..{{diff.aMeasureNumbers.to}}] is different from B[{{diff.bMeasureNumbers.from}}..{{diff.bMeasureNumbers.to}}]</h4>
-    <div v-html="udiffToHTML(udiff(diff.aMeasures, diff.bMeasures))"></div>
+    <h4>{{measureNumber}}</h4>
+    <div v-if="showDiff">
+      <button @click="this.showDiff = false">
+        Hide diff
+      </button>
+      <div v-html="udiffToHTML(udiff(diff.aMeasures, diff.bMeasures))"></div>
+    </div>
+    <button v-else @click="this.showDiff = true">
+      Show diff
+    </button>
     <div style="display: flex;">
       <SheetMusic v-if="diff.aMeasures[0]" :musicXML="musicXML(diff.aMeasures)" style="width: 50%" />
       <div v-else style="width: 50%" />
@@ -19,6 +27,22 @@ import SheetMusic from "./SheetMusic.vue";
 
 export default {
   components: {SheetMusic},
+  computed: {
+    measureNumber(): string {
+      let n = this.diff.aMeasureNumbers;
+      let a = n.from === n.to ? n.from : `${n.from}-${n.to}`;
+
+      n = this.diff.bMeasureNumbers;
+      let b = n.from === n.to ? n.from : `${n.from}-${n.to}`;
+
+      return a === b ? `Measure ${a}` : `Measure ${a} : ${b}`;
+    }
+  },
+  data() {
+    return {
+      showDiff: false,
+    }
+  },
   methods: {
     musicXML(measures): string {
       return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
