@@ -18,6 +18,9 @@
     </div>
   </nav>
   <div class="container mt-4">
+    <div class="mb-4">
+      <b class="text-danger">This version is "beta". Please see <a href="https://github.com/labocho/musicxmldiff/blob/master/README.md" target="_blank">limitation.</a></b>
+    </div>
     <div>
       <h4 class="mb-4">Select MusicXML files to compare</h4>
       <section class="d-flex">
