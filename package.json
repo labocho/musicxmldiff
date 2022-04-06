@@ -9,6 +9,10 @@
     "build": "parcel build src/index.html"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.1.1",
+    "@fortawesome/free-brands-svg-icons": "^6.1.1",
+    "@fortawesome/free-solid-svg-icons": "^6.1.1",
+    "@fortawesome/vue-fontawesome": "^3.0.0-5",
     "diff2html": "^3.4.16",
     "fast-myers-diff": "^3.0.1",
     "jsdiff": "^1.1.1",

@@ -1,26 +1,48 @@
 <template>
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
-  <div class="container">
-    <input type="file" @change="changeFile($event, 'A')" />
-    <input type="file" @change="changeFile($event, 'B')" />
-    <div v-if="scoreA">
-      <code>{{scoreA.numberOfMeasures}}</code>
-      <ul>
-        <li v-for="part in scoreA.partNames" :key="part">{{part}}</li>
-      </ul>
-    </div>
-    <div v-if="scoreB">
-      <code>{{scoreB.numberOfMeasures}}</code>
-      <ul>
-        <li v-for="part in scoreB.partNames" :key="part">{{part}}</li>
-      </ul>
-    </div>
+  <nav class="navbar navbar-light bg-light" style="font-size: 1.75rem;">
+    <div class="container">
+      <span class="navbar-brand mb-0 h1" style="font-weight: lighter; font-size: inherit;">
+        musicxmldiff
+        <span style="font-size: 1.2rem;">beta</span>
+      </span>
 
-    <div v-if="scoreDiff">
-      <select v-model="currentPartName">
-        <option />
-        <option v-for="partDiff in scoreDiff.partDiffs" :key="partDiff.name" :value="partDiff.name">{{partDiff.name}}</option>
-      </select>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a href="https://github.com/labocho/musicxmldiff" class="nav-link" target="_blank">
+            <font-awesome-icon :icon="['fab', 'github']"></font-awesome-icon>
+          </a>
+        </li>
+      </ul>
+      <span></span>
+    </div>
+  </nav>
+  <div class="container mt-4">
+    <div>
+      <h4 class="mb-4">Select MusicXML files to compare</h4>
+      <section class="d-flex">
+        <div style="width: 50%;">
+          <input type="file" @change="changeFile($event, 'A')" />
+        </div>
+        <div style="width: 50%;">
+          <input type="file" @change="changeFile($event, 'B')" />
+        </div>
+      </section>
+    </div>
+    <div v-if="scoreDiff" class="mt-4">
+      <h4>Select part</h4>
+      <table class="table partSelector">
+        <tbody>
+          <tr v-for="partDiff in scoreDiff.partDiffs" :key="partDiff.name" @click="this.currentPartName = partDiff.name">
+            <td style="width: 1px">
+              <input type="radio" :value="partDiff.name" v-model="currentPartName" :id="`partSelector-${partDiff.name}`"/>
+            </td>
+            <td>
+              {{partDiff.name}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <div v-if="partDiff">
@@ -34,6 +56,11 @@
 <script lang="ts">
 import {diff} from "fast-myers-diff";
 import Diff from "./Diff.vue";
+import {library} from '@fortawesome/fontawesome-svg-core'
+import {faGithub} from "@fortawesome/free-brands-svg-icons"
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
+library.add(faGithub);
 
 interface DigestDiff {
   aFrom: number
@@ -262,7 +289,7 @@ class Score {
 }
 
 export default {
-  components: {Diff},
+  components: {Diff, FontAwesomeIcon},
   computed: {
     partA() {
       if (this.currentPartName === null) return null;
@@ -331,3 +358,13 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.partSelector tr:hover {
+  cursor: pointer;
+}
+
+h4 {
+  font-weight: lighter;
+}
+</style>

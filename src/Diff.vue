@@ -99,4 +99,8 @@ export default {
     margin: 1em 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   }
+
+  h4 {
+    font-weight: lighter;
+  }
 </style>
