@@ -27,6 +27,7 @@
 import * as diff2html from "diff2html";
 import {createTwoFilesPatch} from "diff";
 import SheetMusic from "./SheetMusic.vue";
+import {Measure} from "../classes/Measure";
 
 export default {
   components: {SheetMusic},
@@ -47,7 +48,7 @@ export default {
     }
   },
   methods: {
-    musicXML(measures): string {
+    musicXML(measures: Measure[]): string {
       return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
         <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
         <score-partwise version="3.1">
@@ -63,7 +64,7 @@ export default {
         </score-partwise>
       `;
     },
-    udiff(aMeasures, bMeasures) {
+    udiff(aMeasures: Measure[], bMeasures: Measure[]): string {
       let a = [];
       let b = [];
 
@@ -82,7 +83,7 @@ export default {
         b.join(""),
       );
     },
-    udiffToHTML(udiff) {
+    udiffToHTML(udiff: string) {
       return diff2html.html(udiff, {outputFormat: "side-by-side"});
     },
   },

@@ -22,9 +22,8 @@ export class Score {
     });
   }
 
-  load(): Promise<void> {
-    return Promise.all(this.parts.map((part) => part.load())).then(() => {
-      this.loaded = true;
-    });
+  async load(): Promise<void> {
+    await Promise.all(this.parts.map((part) => part.load()));
+    this.loaded = true;
   }
 }

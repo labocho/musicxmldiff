@@ -54,11 +54,10 @@ export class Part {
     this.digests = [];
   }
 
-  load(): Promise<void> {
-    return this.calculateDigest().then((digests) => {
-      this.digests = digests;
-      this.loaded = true;
-    });
+  async load(): Promise<void> {
+    const digests = await this.calculateDigest();
+    this.digests = digests;
+    this.loaded = true;
   }
 
   private filterElement(el: Element): Element {

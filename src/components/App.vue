@@ -112,9 +112,9 @@ export default {
   filters: {
   },
   methods: {
-    changeFile(e, identifier) {
+    changeFile(e: InputEvent, identifier: string) {
       const reader = new FileReader();
-      reader.readAsText(e.currentTarget.files[0]);
+      reader.readAsText((e.currentTarget as HTMLInputElement).files[0]);
       reader.onload = (e2) => {
         const xmlString = e2.target.result as string;
         let score = null;
