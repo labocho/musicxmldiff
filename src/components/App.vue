@@ -124,8 +124,7 @@ export default {
         this[`score${identifier}`] = score;
       };
     },
-    updateScore(score: Score, identifier: string) {
-      this[`score${identifier}`] = Object.assign({}, score);
+    updateScore() {
       if (this.scoreA && this.scoreA.loaded && this.scoreB && this.scoreB.loaded) {
         this.scoreDiff = new ScoreDiff(this.scoreA, this.scoreB);
         this.currentPartName = null;
