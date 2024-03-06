@@ -114,17 +114,11 @@ export default {
   filters: {
   },
   methods: {
-    onSelectFile: async function(e: InputEvent, identifier: string) {
+    async onSelectFile(e: InputEvent, identifier: string) {
       const filePath = await window.ipc.openFile();
       if (filePath === undefined) return;
-      const file = await window.ipc.readFile(filePath);
 
-      let score: (Score|null) = null;
-      score = new Score(file.data, this.ignores);
-      score.load().then(() => { this.updateScore() })
-
-      this[`fileName${identifier}`] = file.name;
-      this[`score${identifier}`] = score;
+      return await this.readFile(identifier, filePath);
     },
     updateScore() {
       if (this.scoreA && this.scoreA.loaded && this.scoreB && this.scoreB.loaded) {
@@ -135,6 +129,24 @@ export default {
         this.currentPartName = null;
       }
     },
+    async readFile(identifier: string, filePath: string) {
+      const file = await window.ipc.readFile(filePath);
+
+      let score: (Score|null) = null;
+      score = new Score(file.data, this.ignores);
+      score.load().then(() => { this.updateScore() })
+
+      this[`fileName${identifier}`] = file.name;
+      this[`score${identifier}`] = score;
+    }
+  },
+  async mounted() {
+    if (this.defaultFilePathA !== null) await this.readFile("A", this.defaultFilePathA);
+    if (this.defaultFilePathB !== null) await this.readFile("B", this.defaultFilePathB);
+  },
+  props: {
+    defaultFilePathA: null as PropType<string|null>,
+    defaultFilePathB: null as PropType<string|null>,
   },
 };
 </script>

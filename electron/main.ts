@@ -1,7 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
-import path from 'node:path'
 
 // The built directory structure
 //
@@ -63,6 +62,8 @@ app.on('activate', () => {
 
 app.whenReady().then(() => {
   let currentWindow: (BrowserWindow|null) = null;
+  ipcMain.handle("argv", async () => process.argv.slice(1));
+
   ipcMain.handle("openFileDialog", async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog(currentWindow!, {properties: ['openFile']})
     if (!canceled) {

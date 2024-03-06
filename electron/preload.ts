@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', withPrototype(ipcRenderer))
 contextBridge.exposeInMainWorld('ipc', withPrototype({
   openFile: () => ipcRenderer.invoke("openFileDialog"),
   readFile: (filePath: string) => ipcRenderer.invoke("readFile", filePath),
+  argv: () => ipcRenderer.invoke("argv"),
 }));
 
 // `exposeInMainWorld` can't detect attributes and methods of `prototype`, manually patching it.
