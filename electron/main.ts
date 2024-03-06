@@ -1,4 +1,6 @@
-import { app, BrowserWindow } from 'electron'
+import fs from "node:fs"
+import path from "node:path"
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'node:path'
 
 // The built directory structure
@@ -37,6 +39,8 @@ function createWindow() {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(process.env.DIST, 'index.html'))
   }
+
+  return win
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -57,4 +61,22 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  let currentWindow: (BrowserWindow|null) = null;
+  ipcMain.handle("openFileDialog", async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(currentWindow!, {properties: ['openFile']})
+    if (!canceled) {
+      return filePaths[0];
+    }
+  });
+
+  ipcMain.handle("readFile", (_event, filePath: string) => {
+    return new Promise((resolve) => {
+      resolve({
+        data: fs.readFileSync(filePath, "utf-8"),
+        name: path.basename(filePath),
+      });
+    })
+  });
+  currentWindow = createWindow()
+})

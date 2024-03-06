@@ -25,10 +25,10 @@
       <h4 class="mb-4">Select MusicXML files to compare</h4>
       <section class="d-flex">
         <div style="width: 50%;">
-          <input type="file" @change="changeFile($event, 'A')" />
+          <button type="button" class="btn btn-primary" @click="onSelectFile($event, 'A')">{{ fileNameA || "ファイルを選択" }}</button>
         </div>
         <div style="width: 50%;">
-          <input type="file" @change="changeFile($event, 'B')" />
+          <button type="button" class="btn btn-primary" @click="onSelectFile($event, 'B')">{{ fileNameB || "ファイルを選択" }}</button>
         </div>
       </section>
     </div>
@@ -91,6 +91,8 @@ export default {
   data() {
     return {
       name: "Vue" as String,
+      fileNameA: null,
+      fileNameB: null,
       scoreA: null,
       scoreB: null,
       scoreDiff: null,
@@ -112,17 +114,17 @@ export default {
   filters: {
   },
   methods: {
-    changeFile(e: InputEvent, identifier: string) {
-      const reader = new FileReader();
-      reader.readAsText((e.currentTarget as HTMLInputElement).files[0]);
-      reader.onload = (e2) => {
-        const xmlString = e2.target.result as string;
-        let score = null;
-        if (xmlString !== null) score = new Score(xmlString, this.ignores);
-        score.load().then(() => { this.updateScore() })
+    onSelectFile: async function(e: InputEvent, identifier: string) {
+      const filePath = await window.ipc.openFile();
+      if (filePath === undefined) return;
+      const file = await window.ipc.readFile(filePath);
 
-        this[`score${identifier}`] = score;
-      };
+      let score: (Score|null) = null;
+      score = new Score(file.data, this.ignores);
+      score.load().then(() => { this.updateScore() })
+
+      this[`fileName${identifier}`] = file.name;
+      this[`score${identifier}`] = score;
     },
     updateScore() {
       if (this.scoreA && this.scoreA.loaded && this.scoreB && this.scoreB.loaded) {
