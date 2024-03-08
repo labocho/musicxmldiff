@@ -13,11 +13,11 @@ export class Score {
     this.partNames = Array.prototype.map.call(
       this.document.querySelectorAll("part-list > score-part > part-name"),
       (el: Element) => el.textContent
-    );
+    ) as string[];
 
     this.parts = Array.from(this.document.querySelectorAll("part")).map((el) => {
-      let id = el.getAttribute("id");
-      let name = this.document.querySelector(`part-list > score-part#${id} > part-name`).textContent;
+      let id = el.getAttribute("id")!;
+      let name = this.document.querySelector(`part-list > score-part#${id} > part-name`)!.textContent!;
       return new Part(el, id, name, ignores);
     });
   }

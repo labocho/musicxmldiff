@@ -37,7 +37,7 @@
       <h4>Select part</h4>
       <table class="table partSelector">
         <tbody>
-          <tr v-for="partDiff in scoreDiff.partDiffs" :key="partDiff.name" @click="this.currentPartName = partDiff.name">
+          <tr v-for="partDiff in scoreDiff.partDiffs" :key="partDiff.name" @click="currentPartName = partDiff.name">
             <td style="width: 1px">
               <input type="radio" :value="partDiff.name" v-model="currentPartName" :id="`partSelector-${partDiff.name}`"/>
             </td>
@@ -64,7 +64,8 @@ import { faGithub } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Score } from "../classes/Score"
 import { ScoreDiff } from "../classes/ScoreDiff"
-import { Ignores } from "../interface/Ignores"
+import { Ignores } from "../interfaces/Ignores"
+import type { PropType } from "vue"
 
 library.add(faGithub);
 
@@ -85,6 +86,7 @@ export default {
     },
     partDiff() {
       if (this.scoreDiff === null) return null;
+      if (this.currentPartName === null) return null;
 
       return this.scoreDiff.getPartDiffByName(this.currentPartName)
     }
@@ -92,12 +94,12 @@ export default {
   data() {
     return {
       name: "Vue" as String,
-      fileNameA: null,
-      fileNameB: null,
-      scoreA: null,
-      scoreB: null,
-      scoreDiff: null,
-      currentPartName: null,
+      fileNameA: null as null|string,
+      fileNameB: null as null|string,
+      scoreA: null as null|Score,
+      scoreB: null as null|Score,
+      scoreDiff: null as null|ScoreDiff,
+      currentPartName: null as null|string,
       ignores: {
         elements: [
           "sound",
@@ -116,7 +118,7 @@ export default {
   filters: {
   },
   methods: {
-    async onSelectFile(e: InputEvent, identifier: string) {
+    async onSelectFile(e: MouseEvent, identifier: string) {
       const filePath = await window.ipc.openFile();
       if (filePath === undefined) return;
 
@@ -140,8 +142,16 @@ export default {
       score = new Score(file.data, this.ignores);
       score.load().then(() => { this.updateScore() })
 
-      this[`fileName${identifier}`] = file.name;
-      this[`score${identifier}`] = score;
+      switch(identifier) {
+        case "A":
+          this.fileNameA = file.name;
+          this.scoreA = score;
+          break;
+        case "B":
+          this.fileNameB = file.name;
+          this.scoreB = score;
+          break;
+      }
     }
   },
   async mounted() {

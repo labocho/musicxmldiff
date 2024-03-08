@@ -1,7 +1,8 @@
 import { Ignores } from "../interfaces/Ignores";
 import { Measure } from "./Measure";
+import { Context } from "../interfaces/Context";
 
-export function last(a) {
+export function last(a: NodeListOf<Element>) {
   return a[a.length - 1];
 }
 
@@ -24,7 +25,7 @@ export class Part {
 
     this.numberOfMeasures = this.element.querySelectorAll("measure").length;
 
-    let context = {
+    let context: Context = {
       key: null,
       time: null,
       clef: null,
@@ -62,7 +63,7 @@ export class Part {
 
   private filterElement(el: Element): Element {
     // measure 自体にマッチするセレクタがヒットするように dummy 要素で囲む
-    let filtered = new DOMParser().parseFromString("<dummy>" + el.outerHTML + "</dummy>", "text/xml").firstElementChild;
+    let filtered = new DOMParser().parseFromString("<dummy>" + el.outerHTML + "</dummy>", "text/xml").firstElementChild!;
 
     for (let selector of this.ignores.elements) {
       filtered.querySelectorAll(selector).forEach((e) => {
@@ -78,7 +79,7 @@ export class Part {
       });
     }
 
-    return filtered.firstElementChild;
+    return filtered.firstElementChild!;
   }
 
   private async calculateDigest(): Promise<string[]> {
@@ -90,15 +91,15 @@ export class Part {
           const ab = await subtle.digest("SHA-256", this.stringToBuffer(m.filtered.outerHTML));
           return this.bufferToString(ab);
         }
-      )
+      ) as string[]
     );
   }
 
   private stringToBuffer(s: string) {
-    return new Uint16Array(Array.prototype.map.call(s, (c: string) => c.charCodeAt(0))).buffer;
+    return new Uint16Array(Array.prototype.map.call(s, (c: string) => c.charCodeAt(0)) as number[]).buffer;
   }
 
   private bufferToString(ab: ArrayBuffer) {
-    return String.fromCharCode.apply(null, new Uint16Array(ab));
+    return new TextDecoder().decode(ab);
   }
 }

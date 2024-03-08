@@ -1,5 +1,5 @@
 export interface Context {
-  key: string;
-  time: string;
-  clef: string;
+  key: string|null;
+  time: string|null;
+  clef: string|null;
 }

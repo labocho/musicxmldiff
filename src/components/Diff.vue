@@ -3,10 +3,10 @@
     <div class="mb-4 d-flex" style="align-items: center;">
       <h4 style="flex-grow: 1; margin: 0;">{{measureNumber}}</h4>
 
-      <button v-if="!showDiff" class="btn btn-outline-dark mt-2 mb-2" @click="this.showDiff = true">
+      <button v-if="!showDiff" class="btn btn-outline-dark mt-2 mb-2" @click="showDiff = true">
         Show diff
       </button>
-      <button v-else class="btn btn-outline-dark mt-2 mb-2" @click="this.showDiff = false">
+      <button v-else class="btn btn-outline-dark mt-2 mb-2" @click="showDiff = false">
         Hide diff
       </button>
     </div>
@@ -103,6 +103,7 @@ export default {
   props: {
     diff: {
       type: Object,
+      required: true,
     }
   },
 }

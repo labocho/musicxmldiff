@@ -5,6 +5,7 @@
   "scripts": {
     "build": "vite build",
     "watch": "vite build --watch",
+    "tsc-watch": "vue-tsc --noEmit --watch",
     "start": "electron ."
   },
   "dependencies": {

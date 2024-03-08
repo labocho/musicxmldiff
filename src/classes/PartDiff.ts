@@ -1,8 +1,14 @@
 import { diff } from "fast-myers-diff";
 import { DigestDiff } from "../interfaces/DigestDiff"
 import { Part } from "./Part"
+import type { Measure } from "./Measure"
 
-export function getMeasureNumbers(measures): {from: string|null, to: string|null} {
+interface MeaureNumbers {
+  from: string|null,
+  to: string|null,
+}
+
+export function getMeasureNumbers(measures: Measure[]): MeaureNumbers {
   if (measures.length === 0) return {from: null, to: null};
 
   return {
@@ -32,8 +38,8 @@ export class PartDiff {
         bBefore: vec4[3],
         aMeasures: aMeasures.slice(vec4[0], vec4[1]),
         bMeasures: bMeasures.slice(vec4[2], vec4[3]),
-        aMeasureNumbers: null,
-        bMeasureNumbers: null,
+        aMeasureNumbers: null as MeaureNumbers|null,
+        bMeasureNumbers: null as MeaureNumbers|null,
       };
 
       digestDiff.aMeasureNumbers = getMeasureNumbers(digestDiff.aMeasures);
