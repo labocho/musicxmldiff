@@ -1,5 +1,5 @@
 <template>
-  <div class="measure">
+  <div class="measure" ref="root">
     <div class="mb-4 d-flex" style="align-items: center;">
       <h4 style="flex-grow: 1; margin: 0;">{{measureNumber}}</h4>
 
@@ -10,7 +10,7 @@
         Hide diff
       </button>
     </div>
-    <div style="display: flex;">
+    <div style="display: flex;" v-if="show">
       <SheetMusic v-if="diff.aMeasures[0]" :musicXML="musicXML(diff.aMeasures)" style="width: 50%" />
       <div v-else style="width: 50%" />
       <SheetMusic v-if="diff.bMeasures[0]" :musicXML="musicXML(diff.bMeasures)" style="width: 50%" />
@@ -44,7 +44,9 @@ export default {
   },
   data() {
     return {
+      show: false,
       showDiff: false,
+      observer: null as null|IntersectionObserver,
     }
   },
   methods: {
@@ -86,6 +88,17 @@ export default {
     udiffToHTML(udiff: string) {
       return diff2html.html(udiff, {outputFormat: "side-by-side"});
     },
+  },
+  mounted() {
+    this.observer = new IntersectionObserver((entries, _observer) => entries.forEach(
+      (entry) => {
+        if (entry.isIntersecting) this.show = true;
+      }
+    ))
+    this.observer.observe(this.$refs.root as Element)
+  },
+  unmounted() {
+    this.observer!.disconnect();
   },
   props: {
     diff: {
