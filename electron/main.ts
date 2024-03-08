@@ -30,7 +30,7 @@ app.whenReady().then(() => {
 
   let currentWindow: (BrowserWindow|null) = null;
 
-  ipcMain.handle("argv", async () => process.argv.slice(1));
+  ipcMain.handle("argv", async () => process.argv.slice(2));
 
   ipcMain.handle("openFileDialog", async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog(currentWindow!, {properties: ['openFile']})
