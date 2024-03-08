@@ -1,4 +1,5 @@
 <template>
+  <div class="loading-indicator" v-if="loading"></div>
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
   <nav class="navbar navbar-light bg-light" style="font-size: 1.75rem;">
     <div class="container">
@@ -108,7 +109,8 @@ export default {
             attributes: ["number"],
           },
         ],
-      } as Ignores
+      } as Ignores,
+      loading: false,
     };
   },
   filters: {
@@ -128,8 +130,10 @@ export default {
         this.scoreDiff = null;
         this.currentPartName = null;
       }
+      this.loading = false;
     },
     async readFile(identifier: string, filePath: string) {
+      this.loading = true;
       const file = await window.ipc.readFile(filePath);
 
       let score: (Score|null) = null;
@@ -158,5 +162,15 @@ export default {
 
 h4 {
   font-weight: lighter;
+}
+
+.loading-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.5);
+  z-index: 1000;
 }
 </style>
