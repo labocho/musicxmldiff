@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "build": "vite build",
+    "build": "vue-tsc --noEmit && vite build",
     "watch": "vite build --watch",
     "tsc-watch": "vue-tsc --noEmit --watch",
     "start": "electron ."
