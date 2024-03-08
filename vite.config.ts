@@ -13,7 +13,8 @@ export default defineConfig({
         renderer: "src/main.ts",
       },
       output: {
-        entryFileNames: "[name].js"
+        entryFileNames: "[name].js",
+        assetFileNames: "[name][extname]",
       }
     }
   },
