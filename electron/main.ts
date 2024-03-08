@@ -1,6 +1,6 @@
 const fs = require("node:fs")
 const path = require("node:path")
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron/main')
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -28,7 +28,7 @@ app.whenReady().then(() => {
     }
   })
 
-  let currentWindow: (BrowserWindow|null) = null;
+  let currentWindow: any = null;
 
   ipcMain.handle("argv", async () => process.argv.slice(2));
 
@@ -39,7 +39,7 @@ app.whenReady().then(() => {
     }
   });
 
-  ipcMain.handle("readFile", (_event, filePath: string) => {
+  ipcMain.handle("readFile", (_event: any, filePath: string) => {
     return new Promise((resolve) => {
       resolve({
         data: fs.readFileSync(filePath, "utf-8"),

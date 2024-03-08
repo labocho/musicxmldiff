@@ -23,90 +23,90 @@
 </template>
 
 
-<script lang="ts">
+<script setup lang="ts">
 import * as diff2html from "diff2html";
 import {createTwoFilesPatch} from "diff";
 import SheetMusic from "./SheetMusic.vue";
 import {Measure} from "../classes/Measure";
+import { computed, ref, onMounted, onUnmounted } from "vue"
 
-export default {
-  components: {SheetMusic},
-  computed: {
-    measureNumber(): string {
-      let n = this.diff.aMeasureNumbers;
-      let a = n.from === n.to ? n.from : `${n.from}-${n.to}`;
+const props = defineProps({
+  diff: {
+    type: Object,
+    required: true,
+  }
+});
 
-      n = this.diff.bMeasureNumbers;
-      let b = n.from === n.to ? n.from : `${n.from}-${n.to}`;
+const measureNumber = computed(() => {
+  let n = props.diff.aMeasureNumbers;
+  let a = n.from === n.to ? n.from : `${n.from}-${n.to}`;
 
-      return a === b ? `Measure ${a}` : `Measure ${a} : ${b}`;
-    }
-  },
-  data() {
-    return {
-      show: false,
-      showDiff: false,
-      observer: null as null|IntersectionObserver,
-    }
-  },
-  methods: {
-    musicXML(measures: Measure[]): string {
-      return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-        <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
-        <score-partwise version="3.1">
-          <part-list>
-            <score-part id="P1">
-              <part-name>Temp</part-name>
-            </score-part>
-          </part-list>
-          <part id="P1">
-            ${measures[0].raw.outerHTML.replace(/(<attributes.*?>)/, "$1" + measures[0].contextMusicXML()) + "\n"}
-            ${measures.slice(1).map((m) => m.raw.outerHTML).join("\n")}
-          </part>
-        </score-partwise>
-      `;
-    },
-    udiff(aMeasures: Measure[], bMeasures: Measure[]): string {
-      let a = [];
-      let b = [];
+  n = props.diff.bMeasureNumbers;
+  let b = n.from === n.to ? n.from : `${n.from}-${n.to}`;
 
-      for (let m of aMeasures) {
-        a.push(m.filtered.outerHTML)
-      }
+  return a === b ? `Measure ${a}` : `Measure ${a} : ${b}`;
+});
 
-      for (let m of bMeasures) {
-        b.push(m.filtered.outerHTML)
-      }
 
-      return createTwoFilesPatch(
-        "left",
-        "right",
-        a.join(""),
-        b.join(""),
-      );
-    },
-    udiffToHTML(udiff: string) {
-      return diff2html.html(udiff, {outputFormat: "side-by-side"});
-    },
-  },
-  mounted() {
-    this.observer = new IntersectionObserver((entries, _observer) => entries.forEach(
-      (entry) => {
-        if (entry.isIntersecting) this.show = true;
-      }
-    ))
-    this.observer.observe(this.$refs.root as Element)
-  },
-  unmounted() {
-    this.observer!.disconnect();
-  },
-  props: {
-    diff: {
-      type: Object,
-      required: true,
-    }
-  },
+const show = ref(false);
+const showDiff = ref(false);
+const root = ref<HTMLElement>();
+
+let observer: null|IntersectionObserver = null;
+
+const musicXML = (measures: Measure[]) => {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+    <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+    <score-partwise version="3.1">
+      <part-list>
+        <score-part id="P1">
+          <part-name>Temp</part-name>
+        </score-part>
+      </part-list>
+      <part id="P1">
+        ${measures[0].raw.outerHTML.replace(/(<attributes.*?>)/, "$1" + measures[0].contextMusicXML()) + "\n"}
+        ${measures.slice(1).map((m) => m.raw.outerHTML).join("\n")}
+      </part>
+    </score-partwise>
+  `;
 }
+
+const udiff = (aMeasures: Measure[], bMeasures: Measure[]) => {
+  let a = [];
+  let b = [];
+
+  for (let m of aMeasures) {
+    a.push(m.filtered.outerHTML)
+  }
+
+  for (let m of bMeasures) {
+    b.push(m.filtered.outerHTML)
+  }
+
+  return createTwoFilesPatch(
+    "left",
+    "right",
+    a.join(""),
+    b.join(""),
+  );
+}
+
+const udiffToHTML = (udiff: string) => {
+  return diff2html.html(udiff, {outputFormat: "side-by-side"});
+}
+
+onMounted(() => {
+  observer = new IntersectionObserver((entries, _observer) => entries.forEach(
+    (entry) => {
+      if (entry.isIntersecting) show.value = true;
+    }
+  ))
+  observer.observe(root.value!)
+})
+
+onUnmounted(() => {
+  observer!.disconnect();
+})
 </script>
 
 <style scoped>

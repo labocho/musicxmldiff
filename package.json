@@ -20,6 +20,7 @@
     "vue": "^3.3.4"
   },
   "devDependencies": {
+    "@types/diff": "^5.0.9",
     "@vitejs/plugin-vue": "^4.3.4",
     "electron": "^26.1.0",
     "typescript": "^5.2.2",

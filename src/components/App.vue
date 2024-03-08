@@ -57,7 +57,7 @@
   </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import Diff from "./Diff.vue";
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faGithub } from "@fortawesome/free-brands-svg-icons"
@@ -65,104 +65,97 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Score } from "../classes/Score"
 import { ScoreDiff } from "../classes/ScoreDiff"
 import { Ignores } from "../interfaces/Ignores"
-import type { PropType } from "vue"
+import { computed, ref, onMounted } from "vue"
 
 library.add(faGithub);
 
-export default {
-  components: {Diff, FontAwesomeIcon},
-  computed: {
-    partA() {
-      if (this.currentPartName === null) return null;
-      if (this.scoreA === null) return null;
+const props = defineProps({
+  defaultFilePathA: {type: String},
+  defaultFilePathB: {type: String},
+});
 
-      return this.scoreA.parts.find((part) => part.name === this.currentPartName);
+const partA = computed(() => {
+  if (currentPartName.value === null) return null;
+  if (scoreA.value === null) return null;
+
+  return scoreA.value.parts.find((part) => part.name === currentPartName.value);
+})
+
+const partB = computed(() => {
+  if (currentPartName.value === null) return null;
+  if (scoreB.value === null) return null;
+
+  return scoreB.value.parts.find((part) => part.name === currentPartName.value);
+})
+
+const partDiff = computed(() => {
+  if (scoreDiff.value === null) return null;
+  if (currentPartName.value === null) return null;
+
+  return scoreDiff.value.getPartDiffByName(currentPartName.value)
+})
+
+const fileNameA = ref<string|null>(null)
+const fileNameB = ref<string|null>(null)
+const scoreA = ref<Score|null>(null)
+const scoreB = ref<Score|null>(null)
+const scoreDiff = ref<ScoreDiff|null>(null)
+const currentPartName = ref<string|null>(null)
+const ignores = ref<Ignores>({
+  elements: [
+    "sound",
+    "rehearsal",
+  ],
+  attributes: [
+    {
+      selector: "measure",
+      attributes: ["number"],
     },
-    partB() {
-      if (this.currentPartName === null) return null;
-      if (this.scoreB === null) return null;
+  ],
+});
+const loading = ref(false)
+const onSelectFile = async (e: MouseEvent, identifier: string) => {
+  const filePath = await window.ipc.openFile();
+  if (filePath === undefined) return;
 
-      return this.scoreB.parts.find((part) => part.name === this.currentPartName);
-    },
-    partDiff() {
-      if (this.scoreDiff === null) return null;
-      if (this.currentPartName === null) return null;
+  return await readFile(identifier, filePath);
+}
 
-      return this.scoreDiff.getPartDiffByName(this.currentPartName)
-    }
-  },
-  data() {
-    return {
-      name: "Vue" as String,
-      fileNameA: null as null|string,
-      fileNameB: null as null|string,
-      scoreA: null as null|Score,
-      scoreB: null as null|Score,
-      scoreDiff: null as null|ScoreDiff,
-      currentPartName: null as null|string,
-      ignores: {
-        elements: [
-          "sound",
-          "rehearsal",
-        ],
-        attributes: [
-          {
-            selector: "measure",
-            attributes: ["number"],
-          },
-        ],
-      } as Ignores,
-      loading: false,
-    };
-  },
-  filters: {
-  },
-  methods: {
-    async onSelectFile(e: MouseEvent, identifier: string) {
-      const filePath = await window.ipc.openFile();
-      if (filePath === undefined) return;
+const updateScore = () => {
+  if (scoreA.value && scoreA.value.loaded && scoreB.value && scoreB.value.loaded) {
+    scoreDiff.value = new ScoreDiff(scoreA.value as Score, scoreB.value as Score);
+    currentPartName.value = null;
+  } else {
+    scoreDiff.value = null;
+    currentPartName.value = null;
+  }
+  loading.value = false;
+}
 
-      return await this.readFile(identifier, filePath);
-    },
-    updateScore() {
-      if (this.scoreA && this.scoreA.loaded && this.scoreB && this.scoreB.loaded) {
-        this.scoreDiff = new ScoreDiff(this.scoreA, this.scoreB);
-        this.currentPartName = null;
-      } else {
-        this.scoreDiff = null;
-        this.currentPartName = null;
-      }
-      this.loading = false;
-    },
-    async readFile(identifier: string, filePath: string) {
-      this.loading = true;
-      const file = await window.ipc.readFile(filePath);
+const readFile = async (identifier: string, filePath: string) => {
+  loading.value = true;
+  const file = await window.ipc.readFile(filePath);
 
-      let score: (Score|null) = null;
-      score = new Score(file.data, this.ignores);
-      score.load().then(() => { this.updateScore() })
+  let score: (Score|null) = null;
+  score = new Score(file.data, ignores.value);
+  score.load().then(() => { updateScore() })
 
-      switch(identifier) {
-        case "A":
-          this.fileNameA = file.name;
-          this.scoreA = score;
-          break;
-        case "B":
-          this.fileNameB = file.name;
-          this.scoreB = score;
-          break;
-      }
-    }
-  },
-  async mounted() {
-    if (this.defaultFilePathA !== null) await this.readFile("A", this.defaultFilePathA);
-    if (this.defaultFilePathB !== null) await this.readFile("B", this.defaultFilePathB);
-  },
-  props: {
-    defaultFilePathA: null as PropType<string|null>,
-    defaultFilePathB: null as PropType<string|null>,
-  },
-};
+  switch(identifier) {
+    case "A":
+      fileNameA.value = file.name;
+      scoreA.value = score;
+      break;
+    case "B":
+      fileNameB.value = file.name;
+      scoreB.value = score;
+      break;
+  }
+}
+
+onMounted(async () => {
+  if (props.defaultFilePathA) await readFile("A", props.defaultFilePathA);
+  if (props.defaultFilePathB) await readFile("B", props.defaultFilePathB);
+})
 </script>
 
 <style scoped>

@@ -2,29 +2,26 @@
   <div ref="sheetmusic" />
 </template>
 
-<script lang="ts">
-
+<script setup lang="ts">
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
+import { onMounted, ref, watch } from "vue";
 
-export default {
-  methods: {
-    renderSheetMusic() {
-      let osmd = new OpenSheetMusicDisplay(this.$refs.sheetmusic, {drawTitle: false, drawPartNames: false});
-      osmd.load(this.musicXML).then(() => osmd.render());
-    }
-  },
-  mounted() {
-    this.renderSheetMusic();
-  },
-  props: {
-    musicXML: {
-      type: String,
-    }
-  },
-  watch: {
-    musicXML() {
-      this.renderSheetMusic();
-    }
-  }
+const props = defineProps({
+  musicXML: {type: String, required: true},
+});
+
+const renderSheetMusic = () => {
+  let osmd = new OpenSheetMusicDisplay(sheetmusic.value!, {drawTitle: false, drawPartNames: false});
+  osmd.load(props.musicXML).then(() => osmd.render());
 }
+
+const sheetmusic = ref<HTMLElement>()
+
+onMounted(() => {
+  renderSheetMusic();
+});
+
+watch(() => props.musicXML, () =>{
+  renderSheetMusic();
+});
 </script>
