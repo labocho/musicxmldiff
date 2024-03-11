@@ -6,7 +6,9 @@
     "build": "vue-tsc --noEmit && vite build",
     "watch": "vite build --watch",
     "tsc-watch": "vue-tsc --noEmit --watch",
-    "start": "electron ."
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.1.1",
@@ -14,12 +16,21 @@
     "@fortawesome/free-solid-svg-icons": "^6.1.1",
     "@fortawesome/vue-fontawesome": "^3.0.0-5",
     "diff2html": "^3.4.16",
+    "electron-squirrel-startup": "^1.0.0",
     "fast-myers-diff": "^3.0.1",
     "jsdiff": "^1.1.1",
     "opensheetmusicdisplay": "^1.4.5",
     "vue": "^3.3.4"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.3.0",
+    "@electron-forge/maker-deb": "^7.3.0",
+    "@electron-forge/maker-rpm": "^7.3.0",
+    "@electron-forge/maker-squirrel": "^7.3.0",
+    "@electron-forge/maker-zip": "^7.3.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.3.0",
+    "@electron-forge/plugin-fuses": "^7.3.0",
+    "@electron/fuses": "^1.7.0",
     "@types/diff": "^5.0.9",
     "@vitejs/plugin-vue": "^4.3.4",
     "electron": "^26.1.0",
