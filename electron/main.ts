@@ -1,6 +1,12 @@
 const fs = require("node:fs")
 const path = require("node:path")
 const { app, BrowserWindow, ipcMain, dialog } = require('electron/main')
+const { program } = require ("commander")
+
+// second-instance イベント時につくオプションを parse できるようにしておく
+program
+  .option("--allow-file-access-from-files")
+  .option("--enable-avfoundation")
 
 // シングルインスタンスの強制
 const gotTheLock: boolean = app.requestSingleInstanceLock();
@@ -16,6 +22,12 @@ async function createWindow() {
 
   await win.loadFile(path.join(__dirname, 'index.html'))
   return win
+}
+
+function parseArguments(args: string[]) {
+  program.parse(args, {from: "user"})
+  const binary = args[0];
+  return path.basename(binary) === "Electron" ? program.args.slice(2) : program.args.slice(1)
 }
 
 app.on('window-all-closed', () => {
@@ -36,14 +48,14 @@ app.whenReady().then(() => {
     if (currentWindow.isMinimized()) currentWindow.restore();
     currentWindow.focus();
 
-    // ファイルからインスタンスが開始された場合
-    if (argv.length >= 3) {
-      const filepath = argv[argv.length - 1];
-
-      // レンダラープロセスへファイルパスを送信
-      currentWindow.webContents.send('open-file', argv.slice(4));
-    }
+    // レンダラープロセスへファイルパスを送信
+    currentWindow.webContents.send("log", "second-instance", argv);
+    currentWindow.webContents.send('open-file', parseArguments(argv));
   });
+
+  app.on("open-file", (...args: any) => {
+    currentWindow.webContents.send("log", "open-file", parseArguments(args));
+  })
 
   let currentWindow: any = null;
 
@@ -64,7 +76,8 @@ app.whenReady().then(() => {
   });
 
   createWindow().then((w) => {
-    w.webContents.send("open-file", process.argv.slice(2));
+    w.webContents.send("log", "launched", process.argv);
+    w.webContents.send("open-file", parseArguments(process.argv));
     currentWindow = w
   })
 })
