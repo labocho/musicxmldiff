@@ -4,5 +4,6 @@ interface Window {
     openFile(): Promise<string|undefined>,
     readFile(filePath: string): Promise<{name: string, data: string}>
     argv(): Promise<string[]>
+    onOpenFile(any): void
   }
 }
