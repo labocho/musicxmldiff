@@ -1,7 +1,9 @@
 const fs = require("node:fs")
 const path = require("node:path")
 const { app, BrowserWindow, ipcMain, dialog } = require('electron/main')
-const { program } = require ("commander")
+const { program } = require("commander")
+
+import type { BrowserWindow as BrowserWindowType } from "electron"
 
 // second-instance イベント時につくオプションを parse できるようにしておく
 program
@@ -12,7 +14,7 @@ program
 const gotTheLock: boolean = app.requestSingleInstanceLock();
 if (!gotTheLock) app.exit();
 
-let windows: {fileA: string|null, fileB: string|null, window: any}[] = [];
+let windows: {fileA: string|null, fileB: string|null, window: BrowserWindowType}[] = [];
 let initialOpenFiles: string[] = [];
 let appReady = false
 
@@ -81,6 +83,7 @@ app.on('window-all-closed', () => {
   }
 });
 
+/* @ts-ignore */
 app.on("open-file", (event: Event, path: string) => {
   event.preventDefault();
   if (appReady) {
