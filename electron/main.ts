@@ -30,12 +30,23 @@ function parseArguments(args: string[]) {
   return path.basename(binary) === "Electron" ? program.args.slice(2) : program.args.slice(1)
 }
 
+let currentWindow: any = null;
+let initialOpenFiles: string[] = [];
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 });
 
+app.on("open-file", (event: Event, path: string) => {
+  event.preventDefault();
+  if (currentWindow) {
+    currentWindow.webContents.send("open-file", [path]);
+  } else {
+    initialOpenFiles.push(path);
+  }
+})
 
 app.whenReady().then(() => {
   app.on('activate', () => {
@@ -53,11 +64,6 @@ app.whenReady().then(() => {
     currentWindow.webContents.send('open-file', parseArguments(argv));
   });
 
-  app.on("open-file", (...args: any) => {
-    currentWindow.webContents.send("log", "open-file", parseArguments(args));
-  })
-
-  let currentWindow: any = null;
 
   ipcMain.handle("openFileDialog", async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog(currentWindow!, {properties: ['openFile']})
@@ -78,6 +84,10 @@ app.whenReady().then(() => {
   createWindow().then((w) => {
     w.webContents.send("log", "launched", process.argv);
     w.webContents.send("open-file", parseArguments(process.argv));
+
+    for (const file of initialOpenFiles) {
+      w.webContents.send("open-file", [file]);
+    }
     currentWindow = w
   })
 })

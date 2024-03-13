@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for bin in $PWD/out/*/musicxmldiff.app/Contents/MacOS/musicxmldiff
+do
+  musicxmldiff=$bin
+done
+
+exec open -a $bin $@
